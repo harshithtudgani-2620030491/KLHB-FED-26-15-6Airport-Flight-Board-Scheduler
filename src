@@ -1,39 +1,76 @@
-import java.util.List;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-    private final Scheduler scheduler;
+public class Flight implements Serializable, Comparable<Flight> {
 
-    public FlightBoard(Scheduler scheduler) {
-        this.scheduler = scheduler;
+    private static final long serialVersionUID = 1L;
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final String ROW_FORMAT = "%-8s %-12s %-10s %-12s %-16s %-16s %-6s %-10s";
+
+    private String flightNumber;
+    private String airline;
+    private String source;
+    private String destination;
+    private LocalDateTime departureTime;
+    private LocalDateTime arrivalTime;
+    private String gate;
+    private FlightStatus status;
+
+    public Flight(String flightNumber, String airline, String source, String destination,
+                  LocalDateTime departureTime, LocalDateTime arrivalTime, String gate) {
+        this.flightNumber = flightNumber;
+        this.airline = airline;
+        this.source = source;
+        this.destination = destination;
+        this.departureTime = departureTime;
+        this.arrivalTime = arrivalTime;
+        this.gate = gate;
+        this.status = FlightStatus.SCHEDULED;
     }
 
-    public void display() {
-        List<Flight> flights = scheduler.sortedByDeparture();
-        System.out.println();
-        System.out.println("=========================== AIRPORT FLIGHT BOARD ===========================");
-        System.out.println(Flight.header());
-        System.out.println("------------------------------------------------------------------------------");
-        if (flights.isEmpty()) {
-            System.out.println("  (no flights scheduled)");
-        } else {
-            for (Flight f : flights) {
-                System.out.println(f.toRow());
-            }
-        }
-        System.out.println("==============================================================================");
+    public String getFlightNumber() { return flightNumber; }
+
+    public String getAirline() { return airline; }
+    public void setAirline(String airline) { this.airline = airline; }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+
+    public String getDestination() { return destination; }
+    public void setDestination(String destination) { this.destination = destination; }
+
+    public LocalDateTime getDepartureTime() { return departureTime; }
+    public void setDepartureTime(LocalDateTime departureTime) { this.departureTime = departureTime; }
+
+    public LocalDateTime getArrivalTime() { return arrivalTime; }
+    public void setArrivalTime(LocalDateTime arrivalTime) { this.arrivalTime = arrivalTime; }
+
+    public String getGate() { return gate; }
+    public void setGate(String gate) { this.gate = gate; }
+
+    public FlightStatus getStatus() { return status; }
+    public void setStatus(FlightStatus status) { this.status = status; }
+
+    @Override
+    public int compareTo(Flight other) {
+        return this.departureTime.compareTo(other.departureTime);
     }
 
-    public void display(List<Flight> flights) {
-        System.out.println();
-        System.out.println("======================= FILTERED RESULTS =======================");
-        System.out.println(Flight.header());
-        System.out.println("------------------------------------------------------------------------------");
-        if (flights.isEmpty()) {
-            System.out.println("  (no matching flights)");
-        } else {
-            for (Flight f : flights) {
-                System.out.println(f.toRow());
-            }
-        }
-        System.out.println("==================================================================");
+    public String toRow() {
+        return String.format(ROW_FORMAT,
+                flightNumber, airline, source, destination,
+                departureTime.format(FMT), arrivalTime.format(FMT),
+                gate, status);
+    }
+
+    public static String header() {
+        return String.format(ROW_FORMAT,
+                "Flight", "Airline", "From", "To", "Departure", "Arrival", "Gate", "Status");
+    }
+
+    @Override
+    public String toString() {
+        return toRow();
     }
 }
