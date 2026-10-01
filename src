@@ -69,8 +69,51 @@ public class Flight implements Serializable, Comparable<Flight> {
                 "Flight", "Airline", "From", "To", "Departure", "Arrival", "Gate", "Status");
     }
 
-    @Override
+    @Overide
+
     public String toString() {
         return toRow();
+    }
+}
+
+
+import java.util.List;
+public class FlightBoard {
+
+    private final Scheduler scheduler;
+
+    public FlightBoard(Scheduler scheduler) {
+        this.scheduler = scheduler;
+    }
+
+    public void display() {
+        List<Flight> flights = scheduler.sortedByDeparture();
+        System.out.println();
+        System.out.println("=========================== AIRPORT FLIGHT BOARD ===========================");
+        System.out.println(Flight.header());
+        System.out.println("------------------------------------------------------------------------------");
+        if (flights.isEmpty()) {
+            System.out.println("  (no flights scheduled)");
+        } else {
+            for (Flight f : flights) {
+                System.out.println(f.toRow());
+            }
+        }
+        System.out.println("==============================================================================");
+    }
+
+    public void display(List<Flight> flights) {
+        System.out.println();
+        System.out.println("======================= FILTERED RESULTS =======================");
+        System.out.println(Flight.header());
+        System.out.println("------------------------------------------------------------------------------");
+        if (flights.isEmpty()) {
+            System.out.println("  (no matching flights)");
+        } else {
+            for (Flight f : flights) {
+                System.out.println(f.toRow());
+            }
+        }
+        System.out.println("==================================================================");
     }
 }
