@@ -291,3 +291,67 @@ public String addFlight(String flightNo, String airline, String destination, Str
         storage.save(flights);
         return "Flight " + f.getFlightNo() + " cancelled.";
     }
+}
+public ArrayList<Flight> getSortedFlights() {
+        ArrayList<Flight> sorted = new ArrayList<Flight>(flights);
+        Collections.sort(sorted);
+        return sorted;
+    }
+ 
+    public ArrayList<Flight> searchByDestination(String destination) {
+        ArrayList<Flight> result = new ArrayList<Flight>();
+        for (Flight f : getSortedFlights()) {
+            if (f.getDestination().equalsIgnoreCase(destination.trim())) {
+                result.add(f);
+            }
+        }
+        return result;
+    }
+}
+ 
+interface FlightStorage {
+    ArrayList<Flight> load();
+ 
+    void save(ArrayList<Flight> flights);
+}
+ 
+class FileFlightStorage implements FlightStorage {
+    private String fileName;
+ 
+    public FileFlightStorage(String fileName) {
+        this.fileName = fileName;
+    }
+ 
+    @Override
+    public ArrayList<Flight> load() {
+        ArrayList<Flight> result = new ArrayList<Flight>();
+        File file = new File(fileName);
+        if (!file.exists()) {
+            return result;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                Flight f = Flight.fromFileLine(line);
+                if (f != null) {
+                    result.add(f);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Could not read " + fileName + ": " + e.getMessage());
+        }
+        return result;
+    }
+ 
+    @Override
+    public void save(ArrayList<Flight> flights) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
+            for (Flight f : flights) {
+                bw.write(f.toFileLine());
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Could not save " + fileName + ": " + e.getMessage());
+        }
+    }
+}
