@@ -1,102 +1,14 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Scanner;
- 
-public class FlightScheduler {
-    private static Scanner in = new Scanner(System.in);
- 
-    private static String ask(String prompt) {
-        System.out.print(prompt);
-        return in.nextLine().trim();
-    }
- 
-    private static void printTable(ArrayList<Flight> list) {
-        if (list.isEmpty()) {
-            System.out.println("No flights to show.");
-            return;
-        }
-        System.out.printf("%-8s %-14s %-14s %-6s %-4s %s%n", "FLIGHT", "AIRLINE", "DESTINATION", "TIME", "RWY", "STATUS");
-        System.out.println("------------------------------------------------------------");
-        for (Flight f : list) {
-            System.out.println(f);
-        }
-    }
- 
-    private static void printMenu() {
-        System.out.println();
-        System.out.println("===== AIRPORT FLIGHT SCHEDULER =====");
-        System.out.println("1. Add flight");
-        System.out.println("2. View schedule");
-        System.out.println("3. Search by destination");
-        System.out.println("4. Delay flight");
-        System.out.println("5. Cancel flight");
-        System.out.println("0. Exit");
-    }
- 
-    public static void main(String[] args) {
-        Scheduler scheduler = new Scheduler(new FileFlightStorage("flights.txt"));
-        boolean running = true;
- 
-        while (running) {
-            printMenu();
-            String choice = ask("Choose an option: ");
- 
-            switch (choice) {
-                case "1":
-                    String no = ask("Flight number: ");
-                    String airline = ask("Airline: ");
-                    String dest = ask("Destination: ");
-                    String time = ask("Departure time (HH:mm): ");
-                    System.out.println(scheduler.addFlight(no, airline, dest, time));
-                    break;
-                case "2":
-                    printTable(scheduler.getSortedFlights());
-                    break;
-                case "3":
-                    printTable(scheduler.searchByDestination(ask("Destination: ")));
-                    break;
-                case "4":
-                    String delayNo = ask("Flight number: ");
-                    try {
-                        int minutes = Integer.parseInt(ask("Delay in minutes: "));
-                        System.out.println(scheduler.delayFlight(delayNo, minutes));
-                    } catch (NumberFormatException e) {
-                        System.out.println("Please enter a valid number.");
-                    }
-                    break;
-                case "5":
-                    System.out.println(scheduler.cancelFlight(ask("Flight number: ")));
-                    break;
-                case "0":
-                    System.out.println("Goodbye!");
-                    running = false;
-                    break;
-                default:
-                    System.out.println("Invalid option.");
-            }
-        }
-        in.close();
-    }
-}
- 
-class Flight implements Comparable<Flight> {
-    public static final String SCHEDULED = "SCHEDULED";
-    public static final String DELAYED = "DELAYED";
-    public static final String CANCELLED = "CANCELLED";
- 
+public class Flight {
+    // CO4: class, private fields (encapsulation)
+    // CO1: int and String variables
     private String flightNo;
     private String airline;
     private String destination;
     private String time;
     private int runway;
     private String status;
- 
+
+    // CO4: constructor and this
     public Flight(String flightNo, String airline, String destination, String time, int runway, String status) {
         this.flightNo = flightNo;
         this.airline = airline;
@@ -105,46 +17,50 @@ class Flight implements Comparable<Flight> {
         this.runway = runway;
         this.status = status;
     }
- 
+
+    // CO4: getters
     public String getFlightNo() {
         return flightNo;
     }
- 
+
     public String getAirline() {
         return airline;
     }
- 
+
     public String getDestination() {
         return destination;
     }
- 
+
     public String getTime() {
         return time;
     }
- 
+
     public int getRunway() {
         return runway;
     }
- 
+
     public String getStatus() {
         return status;
     }
- 
+
     public int getMinutes() {
-        String[] parts = time.split(":");
+        String[] parts = time.split(":");   // CO5: split(), CO3: String array
+        // CO1: arithmetic and Integer.parseInt
         return Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
     }
- 
+
+    // CO4: methods that change the object's state
     public void delayTo(String newTime, int newRunway) {
         this.time = newTime;
         this.runway = newRunway;
-        this.status = DELAYED;
+        this.status = FlightStatus.DELAYED;
     }
- 
+
     public void cancel() {
-        this.status = CANCELLED;
+        this.status = FlightStatus.CANCELLED;
     }
- 
+
+    // CO5: StringBuilder
     public String toFileLine() {
         StringBuilder sb = new StringBuilder();
         sb.append(flightNo).append(",");
@@ -155,203 +71,24 @@ class Flight implements Comparable<Flight> {
         sb.append(status);
         return sb.toString();
     }
- 
+
+    // CO4: static method; CO2: if; CO5: split()
     public static Flight fromFileLine(String line) {
         String[] p = line.split(",");
         if (p.length != 6) {
             return null;
         }
-        try {
-            return new Flight(p[0], p[1], p[2], p[3], Integer.parseInt(p[4]), p[5]);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return new Flight(p[0], p[1], p[2], p[3], Integer.parseInt(p[4]), p[5]);
     }
- 
-    @Override
-    public int compareTo(Flight other) {
-        return Integer.compare(getMinutes(), other.getMinutes());
-    }
- 
+
+    // CO4: method overriding; CO5: String.format
     @Override
     public String toString() {
         return String.format("%-8s %-14s %-14s %-6s R%-3d %s", flightNo, airline, destination, time, runway, status);
     }
 }
+      
+            
+                
+   
  
-class Scheduler {
-    private static final int RUNWAYS = 3;
-    private static final int GAP_MINUTES = 10;
- 
-    private ArrayList<Flight> flights;
-    private FlightStorage storage;
- 
-    public Scheduler(FlightStorage storage) {
-        this.storage = storage;
-        this.flights = storage.load();
-    }
- 
-    private static boolean isValidTime(String t) {
-        if (!t.matches("\\d{2}:\\d{2}")) {
-            return false;
-        }
-        int h = Integer.parseInt(t.substring(0, 2));
-        int m = Integer.parseInt(t.substring(3, 5));
-        return h < 24 && m < 60;
-    }
- 
-    private static String formatTime(int minutes) {
-        return String.format("%02d:%02d", minutes / 60, minutes % 60);
-    }
- 
-    private Flight findFlight(String flightNo) {
-        for (Flight f : flights) {
-            if (f.getFlightNo().equalsIgnoreCase(flightNo.trim())) {
-                return f;
-            }
-        }
-        return null;
-    }
- 
-    private boolean runwayFree(int runway, int minutes, Flight ignore) {
-        for (Flight f : flights) {
-            if (f == ignore || f.getStatus().equals(Flight.CANCELLED) || f.getRunway() != runway) {
-                continue;
-            }
-            if (Math.abs(f.getMinutes() - minutes) < GAP_MINUTES) {
-                return false;
-            }
-        }
-        return true;
-    }
- 
-    private int findFreeRunway(int minutes, Flight ignore) {
-        for (int r = 1; r <= RUNWAYS; r++) {
-            if (runwayFree(r, minutes, ignore)) {
-                return r;
-            }
-        }
-        return -1;
-    }
-
-public String addFlight(String flightNo, String airline, String destination, String time) {
-        String no = flightNo.trim().toUpperCase();
-        if (no.isEmpty() || airline.trim().isEmpty() || destination.trim().isEmpty()) {
-            return "Flight number, airline and destination cannot be empty.";
-        }
-        if (findFlight(no) != null) {
-            return "A flight with number " + no + " already exists.";
-        }
-        if (!isValidTime(time)) {
-            return "Invalid time. Use 24-hour format like 14:30.";
-        }
-        int minutes = Integer.parseInt(time.substring(0, 2)) * 60 + Integer.parseInt(time.substring(3, 5));
-        int runway = findFreeRunway(minutes, null);
-        if (runway == -1) {
-            return "No runway available at that time.";
-        }
-        flights.add(new Flight(no, airline.trim(), destination.trim(), time, runway, Flight.SCHEDULED));
-        storage.save(flights);
-        return "Flight " + no + " scheduled on runway " + runway + ".";
-    }
- 
-    public String delayFlight(String flightNo, int delay) {
-        Flight f = findFlight(flightNo);
-        if (f == null) {
-            return "Flight not found.";
-        }
-        if (f.getStatus().equals(Flight.CANCELLED)) {
-            return "Cannot delay a cancelled flight.";
-        }
-        if (delay <= 0) {
-            return "Delay must be positive.";
-        }
-        int newMinutes = f.getMinutes() + delay;
-        if (newMinutes >= 24 * 60) {
-            return "Delay pushes the flight past midnight.";
-        }
-        int runway = findFreeRunway(newMinutes, f);
-        if (runway == -1) {
-            return "No runway free at the delayed time.";
-        }
-        f.delayTo(formatTime(newMinutes), runway);
-        storage.save(flights);
-        return "Flight " + f.getFlightNo() + " delayed to " + f.getTime() + " on runway " + runway + ".";
-    }
- 
-    public String cancelFlight(String flightNo) {
-        Flight f = findFlight(flightNo);
-        if (f == null) {
-            return "Flight not found.";
-        }
-        if (f.getStatus().equals(Flight.CANCELLED)) {
-            return "Flight is already cancelled.";
-        }
-        f.cancel();
-        storage.save(flights);
-        return "Flight " + f.getFlightNo() + " cancelled.";
-    }
-}
-public ArrayList<Flight> getSortedFlights() {
-        ArrayList<Flight> sorted = new ArrayList<Flight>(flights);
-        Collections.sort(sorted);
-        return sorted;
-    }
- 
-    public ArrayList<Flight> searchByDestination(String destination) {
-        ArrayList<Flight> result = new ArrayList<Flight>();
-        for (Flight f : getSortedFlights()) {
-            if (f.getDestination().equalsIgnoreCase(destination.trim())) {
-                result.add(f);
-            }
-        }
-        return result;
-    }
-}
- 
-interface FlightStorage {
-    ArrayList<Flight> load();
- 
-    void save(ArrayList<Flight> flights);
-}
- 
-class FileFlightStorage implements FlightStorage {
-    private String fileName;
- 
-    public FileFlightStorage(String fileName) {
-        this.fileName = fileName;
-    }
- 
-    @Override
-    public ArrayList<Flight> load() {
-        ArrayList<Flight> result = new ArrayList<Flight>();
-        File file = new File(fileName);
-        if (!file.exists()) {
-            return result;
-        }
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                Flight f = Flight.fromFileLine(line);
-                if (f != null) {
-                    result.add(f);
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("Could not read " + fileName + ": " + e.getMessage());
-        }
-        return result;
-    }
- 
-    @Override
-    public void save(ArrayList<Flight> flights) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
-            for (Flight f : flights) {
-                bw.write(f.toFileLine());
-                bw.newLine();
-            }
-        } catch (IOException e) {
-            System.out.println("Could not save " + fileName + ": " + e.getMessage());
-        }
-    }
-}
