@@ -6,7 +6,7 @@ KLHB-FED-26-15-6Airport Flight Board & Scheduler
 
 
 #Supervisor
-Sreerama Murthy Kattamurị...
+Sreerama Murthy Kattamurị
 
 
 #Abstract 
